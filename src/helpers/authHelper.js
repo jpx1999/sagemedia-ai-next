@@ -1,67 +1,161 @@
-import { googleLogout } from '@react-oauth/google'
-import { store } from '../store/store'
-import { logout } from '../store/slice/authSlice'
+import { signOut } from "../firebase/firebaseConfig";
+import { auth } from "../firebase/firebaseConfig";
+import { logout } from "../store/slice/authSlice";
+import { store } from "../store/store";
+import { onAuthStateChanged } from "firebase/auth";
 
-// Simple logout function that clears Redux state and localStorage
-export const handleLogout = () => {
-  // Clear Redux state
-  store.dispatch(logout())
-
-  // Clear any local storage items
-  localStorage.clear()
-  sessionStorage.clear()
-
-  // For Google OAuth, call googleLogout if available
+/**
+ * Performs a complete logout, clearing all auth data from Firebase,
+ * localStorage, and Redux store
+ */
+export const handleLogout = async () => {
   try {
-    googleLogout()
-  } catch (error) {
-    console.log('Google logout not available or already logged out')
-  }
+    // Sign out from Firebase
+    await signOut(auth);
 
-  // For Firebase auth, sign out if available
+    // Dispatch logout action to Redux
+    localStorage.removeItem("role");
+    localStorage.removeItem("authData");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    store.dispatch(logout());
+
+    // Redirect to login page
+    window.location.href = "/login";
+  } catch (error) {
+    console.error("Error during logout:", error);
+
+    // Even if Firebase logout fails, clear local data
+    localStorage.removeItem("role");
+    localStorage.removeItem("authData");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+
+    // Dispatch logout action to Redux
+    store.dispatch(logout());
+
+    // Redirect to login page
+    window.location.href = "/login";
+  }
+};
+
+/**
+ * Updates user data in localStorage
+ */
+// export const updateUserData = (userData) => {
+//   try {
+//     const authData = localStorage.getItem('authData');
+//     const parsedAuthData = authData ? JSON.parse(authData) : { isLoggedIn: true };
+
+//     const updatedAuthData = {
+//       ...parsedAuthData,
+//       user: {
+//         ...(parsedAuthData.user || {}),
+//         ...userData
+//       }
+//     };
+
+//     localStorage.setItem('authData', JSON.stringify(updatedAuthData));
+//     return true;
+//   } catch (error) {
+//     console.error('Error updating user data:', error);
+//     return false;
+//   }
+// };
+
+/**
+ * Gets the current user data from localStorage
+ */
+export const getCurrentUser = () => {
   try {
-    import('firebase/auth').then(({ signOut, getAuth }) => {
-      const auth = getAuth()
-      signOut(auth).catch(() => {
-        // Ignore errors if not authenticated
-      })
-    }).catch(() => {
-      // Firebase not available
-    })
+    const authData = localStorage.getItem("authData");
+    if (!authData) return null;
+
+    const parsedAuthData = JSON.parse(authData);
+    return parsedAuthData.user || null;
   } catch (error) {
-    console.log('Firebase logout not available')
+    console.error("Error getting current user:", error);
+    return null;
   }
-  
-  // Redirect to home page after a brief delay to allow cleanup
-  if (typeof window !== 'undefined') {
-    setTimeout(() => {
-      window.location.href = '/'
-    }, 100)
-  }
-}
+};
 
-// Logout function that can be used with Auth0 hook
-export const createAuthLogoutHandler = (auth0Logout) => {
-  return () => {
-    // Clear Redux state
-    store.dispatch(logout())
-    
-    // Clear storage
-    localStorage.clear()
-    sessionStorage.clear()
+/**
+ * Gets the current access token
+ */
+export const getAccessToken = () => {
+  try {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return null;
 
-    // Handle Auth0 logout if provided
-    if (auth0Logout) {
-      auth0Logout({ 
-        logoutParams: {
-          returnTo: window.location.origin 
-        }
-      })
-    } else {
-      // Fallback: redirect to home
-      if (typeof window !== 'undefined') {
-        window.location.href = '/'
-      }
+    // Handle case where token might be stored as JSON string
+    if (token.startsWith('"') && token.endsWith('"')) {
+      return JSON.parse(token);
     }
+
+    return token;
+  } catch (error) {
+    console.error("Error parsing access token:", error);
+    // Try to return the raw token if JSON parsing fails
+    return localStorage.getItem("accessToken");
   }
-} 
+};
+
+/**
+ * Gets the current refresh token
+ */
+export const getRefreshToken = () => {
+  return localStorage.getItem("refreshToken");
+};
+
+/**
+ * Updates the access and refresh tokens
+ */
+export const updateTokens = (accessToken, refreshToken) => {
+  if (accessToken) {
+    localStorage.setItem("accessToken", accessToken);
+  }
+
+  if (refreshToken) {
+    localStorage.setItem("refreshToken", refreshToken);
+  }
+};
+
+/**
+ * Checks if user session can be restored from stored tokens
+ */
+export const canRestoreSession = () => {
+  try {
+    const authData = localStorage.getItem("authData");
+    const accessToken = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    return !!(authData || (accessToken && refreshToken));
+  } catch (error) {
+    console.error("Error checking session restore capability:", error);
+    return false;
+  }
+};
+
+/**
+ * Waits for Firebase auth state to be ready
+ * Useful when auth.currentUser is null but user should be authenticated
+ */
+export const waitForAuthReady = (maxWaitTime = 5000) => {
+  return new Promise((resolve) => {
+    if (auth.currentUser) {
+      resolve(auth.currentUser);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      unsubscribe();
+      resolve(null);
+    }, maxWaitTime);
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      clearTimeout(timeout);
+      unsubscribe();
+      resolve(user);
+    });
+  });
+};
