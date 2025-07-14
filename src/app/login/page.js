@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../../store/slice/authSlice";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useRouter, usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSpinner,
@@ -37,8 +37,8 @@ const SignUpAndLogin = ({
   isDarkTheme,
 }) => {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const [signInLoading, setSignInLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
@@ -323,7 +323,7 @@ const SignUpAndLogin = ({
 
   // Extract newsId from current URL if it exists
   const getNewsIdFromUrl = () => {
-    const pathParts = location.pathname.split("/");
+    const pathParts = pathname.split("/");
     const newsIdIndex = pathParts.indexOf("newsid");
     if (newsIdIndex !== -1 && pathParts.length > newsIdIndex + 1) {
       return pathParts[newsIdIndex + 1];
@@ -635,9 +635,9 @@ const SignUpAndLogin = ({
         } else if (redirectAfterLogin) {
           const newsId = getNewsIdFromUrl();
           if (newsId) {
-            link(`/news-intelligence/newsid/${newsId}`);
+            router.push(`/news-intelligence/newsid/${newsId}`);
           } else {
-            navigate("/news-intelligence");
+            router.push("/news-intelligence");
           }
         }
       } else {
@@ -996,6 +996,8 @@ const SignUpAndLogin = ({
                     src="/images/google-logo.svg"
                     alt="Google Icon"
                     className="mr-2"
+                    width={20}
+                    height={20}
                   />
                 )}
               </button>
@@ -1016,6 +1018,8 @@ const SignUpAndLogin = ({
                     src="/images/microsoft-logo.svg"
                     alt="Microsoft Icon"
                     className="mr-2"
+                    width={20}
+                    height={20}
                   />
                 )}
               </button>
@@ -1137,6 +1141,8 @@ const SignUpAndLogin = ({
                           src="/images/google-logo.svg"
                           alt="Google Icon"
                           className="mr-2"
+                          width={20}
+                          height={20}
                         />
                       )}
                     </button>
@@ -1156,6 +1162,8 @@ const SignUpAndLogin = ({
                           src="/images/microsoft-logo.svg"
                           alt="Microsoft Icon"
                           className="mr-2"
+                          width={20}
+                          height={20}
                         />
                       )}
                     </button>

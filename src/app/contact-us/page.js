@@ -2,7 +2,7 @@
 import Layout from "@/components/Layout";
 import React from "react";
 
-const ContactUs = ({ isDarkTheme }) => {
+const ContactUs = () => {
   const calendlyUrl =
     process.env.NEXT_PUBLIC_CALENDLY_URL ||
     "https://calendly.com/hello-spiderx/30min";
