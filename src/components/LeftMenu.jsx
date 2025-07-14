@@ -1,3 +1,4 @@
+'use client'
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";

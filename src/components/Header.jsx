@@ -1,3 +1,4 @@
+'use client'
 import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -48,6 +49,7 @@ const Header = ({
   const router = useRouter();
   const [isSearching, setIsSearching] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const userData = useSelector((state) => state.auth.user);
   const userMenuRef = useRef(null);
   const menuButtonRef = useRef(null);
@@ -278,6 +280,11 @@ const Header = ({
     };
   }, [userMenuVisible]);
 
+  // Track when component is mounted to prevent hydration mismatches
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Update menu animation state
   useEffect(() => {
     setMenuAnimation(userMenuVisible ? "dropdown-open" : "dropdown-close");
@@ -478,7 +485,8 @@ const Header = ({
   };
 
   const getUserInitials = () => {
-    if (!userData || !userData.name) return "DU";
+    // Always return "DU" during SSR and before mounting to prevent hydration mismatch
+    if (!isMounted || !userData || !userData.name) return "DU";
 
     const nameParts = userData.name.trim().split(" ");
     const firstInitial = nameParts[0][0] || "";

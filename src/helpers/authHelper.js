@@ -23,7 +23,9 @@ export const handleLogout = async () => {
     store.dispatch(logout());
 
     // Redirect to login page
-    window.location.href = "/login";
+    if (typeof window !== 'undefined') {
+      window.location.href = "/login";
+    }
   } catch (error) {
     console.error("Error during logout:", error);
 
@@ -39,7 +41,9 @@ export const handleLogout = async () => {
     store.dispatch(logout());
 
     // Redirect to login page
-    window.location.href = "/login";
+    if (typeof window !== 'undefined') {
+      window.location.href = "/login";
+    }
   }
 };
 

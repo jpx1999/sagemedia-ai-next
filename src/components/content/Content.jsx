@@ -50,7 +50,7 @@ const Content = ({
 
   // Add dispatch and window width state
   const dispatch = useDispatch();
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [windowWidth, setWindowWidth] = useState(1024); // Default to desktop width for SSR
   const [activeHeadline, setActiveHeadline] = useState(null);
 
   // State for rotating loading messages
@@ -556,6 +556,12 @@ const Content = ({
 
   // Add window resize listener
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+    
+    // Set initial window width
+    setWindowWidth(window.innerWidth);
+    
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);

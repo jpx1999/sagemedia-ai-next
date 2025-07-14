@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useRouter,useSearchParams } from "next/navigation";
 import { applyActionCode, checkActionCode } from "firebase/auth";
 import { auth } from "../firebase/firebaseConfig";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -12,7 +12,7 @@ import { Toaster, toast } from "react-hot-toast";
 
 const AuthActionHandler = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [status, setStatus] = useState("processing"); // processing, success, error
   const [message, setMessage] = useState("");
 
@@ -86,7 +86,7 @@ const AuthActionHandler = () => {
 
         // Redirect to login page after a short delay
         setTimeout(() => {
-          navigate("/login", { replace: true });
+          router.push("/login", { replace: true });
         }, 3000);
       } catch (error) {
         throw error; // Re-throw to be handled by the outer try-catch
@@ -94,10 +94,10 @@ const AuthActionHandler = () => {
     };
 
     handleAuthAction();
-  }, [searchParams, navigate]);
+    }, [searchParams, router]);
 
   const handleReturnToLogin = () => {
-    navigate("/login", { replace: true });
+    router.push("/login", { replace: true });
   };
 
   return (

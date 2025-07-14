@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../../store/slice/authSlice";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSpinner,
@@ -19,6 +19,7 @@ import { updateTokens } from "../../helpers/authHelper";
 import { sendOTP, verifyOTP, checkEmailExists, authUser } from "../../helpers/api";
 import { Toaster, toast } from "react-hot-toast";
 import Layout from "../../components/Layout";
+import AuthActionHandler from "../../components/AuthActionHandler";
 import {
   formatLocationForAPI,
   getAuthenticationData,
@@ -30,6 +31,26 @@ const isGmailAccount = (email) => {
   return email && email.toLowerCase().endsWith("@gmail.com");
 };
 
+// Safe localStorage access for SSR
+const safeLocalStorage = {
+  getItem: (key) => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(key);
+    }
+    return null;
+  },
+  setItem: (key, value) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, value);
+    }
+  },
+  removeItem: (key) => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(key);
+    }
+  }
+};
+
 const SignUpAndLogin = ({
   isModal = false,
   onLoginSuccess = null,
@@ -39,6 +60,7 @@ const SignUpAndLogin = ({
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [signInLoading, setSignInLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
@@ -58,16 +80,9 @@ const SignUpAndLogin = ({
   const [emailExists, setEmailExists] = useState(null);
   const [existingUserName, setExistingUserName] = useState("");
 
-  // Updated state initializations with Gmail check
-  const [lastEmail, setLastEmail] = useState(() => {
-    const storedEmail = localStorage.getItem("lastLoggedInEmail") || "";
-    return isGmailAccount(storedEmail) ? storedEmail : "";
-  });
-
-  const [showJumpBackIn, setShowJumpBackIn] = useState(() => {
-    const lastEmail = localStorage.getItem("lastLoggedInEmail");
-    return !!(lastEmail && isGmailAccount(lastEmail));
-  });
+  // Updated state initializations with Gmail check - SSR safe
+  const [lastEmail, setLastEmail] = useState("");
+  const [showJumpBackIn, setShowJumpBackIn] = useState(false);
 
   // New state for step management
   const [currentStep, setCurrentStep] = useState("email"); // "email", "name", "verification"
@@ -94,6 +109,15 @@ const SignUpAndLogin = ({
       if (interval) clearInterval(interval);
     };
   }, [resendTimer]);
+
+  // Initialize localStorage values on client side to prevent SSR issues
+  useEffect(() => {
+    const storedEmail = safeLocalStorage.getItem("lastLoggedInEmail") || "";
+    if (isGmailAccount(storedEmail)) {
+      setLastEmail(storedEmail);
+      setShowJumpBackIn(true);
+    }
+  }, []);
 
   // Listen for auth state changes to handle email verification
   useEffect(() => {
@@ -127,6 +151,15 @@ const SignUpAndLogin = ({
     });
     return () => unsubscribe();
   }, [isSignUp, waitingForVerification]);
+
+  // Check for Firebase Auth action parameters
+  const mode = searchParams.get("mode");
+  const oobCode = searchParams.get("oobCode");
+
+  // If we have Firebase Auth action parameters, show the AuthActionHandler
+  if (mode && oobCode) {
+    return <AuthActionHandler />;
+  }
 
   // Handle login for verified users
   const handleVerifiedUserLogin = async (user) => {
@@ -209,7 +242,7 @@ const SignUpAndLogin = ({
       if (emailExists) {
         nameToUse = existingUserName || "";
       } else {
-        const storedName = localStorage.getItem("tempUserName");
+        const storedName = safeLocalStorage.getItem("tempUserName");
         nameToUse = storedName || currentFormData.name || "";
       }
 
@@ -223,7 +256,7 @@ const SignUpAndLogin = ({
         if (!isAutoSubmit) {
           toast.success("Email verified successfully!");
         }
-        localStorage.removeItem("tempUserName");
+        safeLocalStorage.removeItem("tempUserName");
         await handleCustomTokenAuthentication(
           response.customToken,
           response.user
@@ -254,7 +287,7 @@ const SignUpAndLogin = ({
       const idToken = await userCredential.user.getIdToken();
       const refreshToken = userCredential.user.refreshToken;
 
-      const storedName = localStorage.getItem("tempUserName");
+      const storedName = safeLocalStorage.getItem("tempUserName");
       const nameToUse = storedName || formData.name;
 
       if (nameToUse && nameToUse.trim()) {
@@ -263,7 +296,7 @@ const SignUpAndLogin = ({
         });
       }
 
-      localStorage.removeItem("tempUserName");
+      safeLocalStorage.removeItem("tempUserName");
       await getUserDetails(idToken, refreshToken, "custom-token-auth");
     } catch (error) {
       console.error("Error in custom token authentication:", error);
@@ -290,7 +323,7 @@ const SignUpAndLogin = ({
       if (emailExists) {
         nameToSend = existingUserName;
       } else {
-        nameToSend = localStorage.getItem("tempUserName");
+        nameToSend = safeLocalStorage.getItem("tempUserName");
       }
 
       const response = await sendOTP(formData.email, nameToSend);
@@ -420,7 +453,7 @@ const SignUpAndLogin = ({
     setError("");
 
     try {
-      localStorage.setItem("tempUserName", formData.name.trim());
+      safeLocalStorage.setItem("tempUserName", formData.name.trim());
       await sendOTPForNewUser();
     } catch (error) {
       console.error("Error in name submission:", error);
@@ -593,7 +626,7 @@ const SignUpAndLogin = ({
       const isVerified = response.data?.status === 1;
       if (isVerified) {
         updateTokens(accessToken, refreshToken);
-        localStorage.setItem("role", response.data?.role);
+        safeLocalStorage.setItem("role", response.data?.role);
         const userData = {
           uid: currentUser.uid,
           email: currentUser.email,

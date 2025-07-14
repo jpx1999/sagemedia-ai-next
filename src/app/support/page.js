@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import AuthWrapper from '../../components/AuthWrapper'
 
-export default function Support() {
+function Support() {
   const [isDarkTheme, setIsDarkTheme] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -244,4 +245,12 @@ export default function Support() {
       </div>
     </div>
   )
-} 
+}
+
+export default function SupportPage() {
+  return (
+    <AuthWrapper requireAuth={true}>
+      <Support />
+    </AuthWrapper>
+  );
+}

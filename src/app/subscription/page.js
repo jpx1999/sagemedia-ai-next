@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
+import AuthWrapper from "../../components/AuthWrapper";
 import useWindowSize from "../../hooks/useWindowSize"; // Import the window size hook
 import {
   createSubscription,
@@ -2182,4 +2183,10 @@ const Subscription = ({ partialAccess = false }) => {
   );
 };
 
-export default Subscription;
+export default function SubscriptionPage() {
+  return (
+    <AuthWrapper requireAuth={true}>
+      <Subscription />
+    </AuthWrapper>
+  );
+}

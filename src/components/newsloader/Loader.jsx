@@ -90,6 +90,9 @@ const Loader = ({ isVisible = true }) => {
 
   useEffect(() => {
     const calculateSidebarWidth = () => {
+      // Only run on client side
+      if (typeof window === 'undefined') return;
+      
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
       setIsMobile(windowWidth < 768);

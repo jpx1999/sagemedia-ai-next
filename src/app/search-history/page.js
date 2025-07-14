@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import useWindowSize from "../../hooks/useWindowSize";
+import AuthWrapper from "../../components/AuthWrapper";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearch,
@@ -1160,4 +1161,10 @@ const SearchHistory = ({  partialAccess = false }) => {
   );
 };
 
-export default SearchHistory;
+export default function SearchHistoryPage() {
+  return (
+    <AuthWrapper requireAuth={true}>
+      <SearchHistory />
+    </AuthWrapper>
+  );
+}

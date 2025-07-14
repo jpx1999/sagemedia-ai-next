@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import AuthWrapper from '../../components/AuthWrapper'
 
-export default function Bookmarks() {
+function Bookmarks() {
   const [isDarkTheme, setIsDarkTheme] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [viewMode, setViewMode] = useState('grid') // 'grid' or 'list'
@@ -234,4 +235,12 @@ export default function Bookmarks() {
       </div>
     </div>
   )
-} 
+}
+
+export default function BookmarksPage() {
+  return (
+    <AuthWrapper requireAuth={true}>
+      <Bookmarks />
+    </AuthWrapper>
+  );
+}

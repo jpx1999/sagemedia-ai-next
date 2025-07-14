@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import useWindowSize from "../../hooks/useWindowSize";
 import DashboardLayout from "../../components/layouts/DashboardLayout";
+import AuthWrapper from "../../components/AuthWrapper";
 import {
   getUsersWithFilters,
   getPlatformSummary,
@@ -1114,4 +1115,10 @@ const AdminDashboard = ({  partialAccess = false }) => {
   );
 };
 
-export default AdminDashboard;
+export default function AdminDashboardPage() {
+  return (
+    <AuthWrapper requireAdmin={true}>
+      <AdminDashboard />
+    </AuthWrapper>
+  );
+}

@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { Helmet } from "react-helmet-async";
 
 const DynamicMeta = ({
   newsItem = null,
@@ -319,97 +318,7 @@ const DynamicMeta = ({
     }
   }, [cleanHeadline, pageTitle, pageDescription, imageUrl, currentUrl]);
 
-  return (
-    <Helmet>
-      {/* Basic Meta Tags */}
-      <title>{pageTitle}</title>
-      <meta name="description" content={pageDescription} />
-
-      {/* Open Graph Tags for Social Sharing */}
-      <meta property="og:title" content={pageTitle} />
-      <meta property="og:description" content={pageDescription} />
-      <meta property="og:type" content="article" />
-      <meta property="og:url" content={currentUrl} />
-      <meta property="og:image" content={imageUrl} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta property="og:site_name" content="SAGE by SpiderX.AI" />
-      <meta property="og:locale" content="en_US" />
-
-      {/* Twitter Card Tags */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={pageTitle} />
-      <meta name="twitter:description" content={pageDescription} />
-      <meta name="twitter:image" content={imageUrl} />
-      <meta name="twitter:site" content="@SpiderXAI" />
-      <meta name="twitter:creator" content="@SpiderXAI" />
-
-      {/* Article specific meta tags */}
-      {publishedTime && (
-        <>
-          <meta property="article:published_time" content={publishedTime} />
-          <meta property="article:modified_time" content={publishedTime} />
-        </>
-      )}
-      {source && <meta property="article:author" content={source} />}
-      <meta property="article:section" content="Financial News" />
-      <meta property="article:tag" content="AI Analysis" />
-      <meta property="article:tag" content="Market Intelligence" />
-
-      {/* Additional SEO tags */}
-      <meta
-        name="robots"
-        content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"
-      />
-      <link rel="canonical" href={currentUrl} />
-
-      {/* Enhanced Keywords */}
-      <meta name="keywords" content={generateKeywords()} />
-
-      {/* Additional meta tags for better SEO */}
-      {cleanHeadline && (
-        <meta property="article:headline" content={cleanHeadline} />
-      )}
-      {cleanSummary && (
-        <meta
-          property="article:summary"
-          content={cleanSummary.substring(0, 300)}
-        />
-      )}
-
-      {/* Schema.org structured data */}
-      {cleanHeadline && (
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "NewsArticle",
-            headline: cleanHeadline,
-            description: pageDescription,
-            image: imageUrl,
-            datePublished: publishedTime || new Date().toISOString(),
-            dateModified: publishedTime || new Date().toISOString(),
-            author: {
-              "@type": "Organization",
-              name: source || "SAGE by SpiderX.AI",
-            },
-            publisher: {
-              "@type": "Organization",
-              name: "SAGE by SpiderX.AI",
-              logo: {
-                "@type": "ImageObject",
-                url: "https://sagemedia.ai/images/sage-logo.png",
-              },
-            },
-            url: currentUrl,
-            mainEntityOfPage: {
-              "@type": "WebPage",
-              "@id": currentUrl,
-            },
-          })}
-        </script>
-      )}
-    </Helmet>
-  );
+  return null;
 };
 
 export default DynamicMeta;

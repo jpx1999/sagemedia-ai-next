@@ -70,6 +70,8 @@ const DashboardLayout = ({
 
   // Calculate viewport height
   const calculateViewportHeight = () => {
+    // Only run on client side
+    if (typeof window === 'undefined') return 800; // Default height for SSR
     return window.innerHeight;
   };
 
@@ -121,17 +123,25 @@ const DashboardLayout = ({
       }
     };
 
-    // Add event listeners
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("orientationchange", handleOrientationChange);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    // Add event listeners (only on client side)
+    if (typeof window !== 'undefined') {
+      window.addEventListener("resize", handleResize);
+      window.addEventListener("orientationchange", handleOrientationChange);
+    }
+    if (typeof document !== 'undefined') {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+    }
 
     // Cleanup
     return () => {
       clearTimeout(resizeTimeout);
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("orientationchange", handleOrientationChange);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener("resize", handleResize);
+        window.removeEventListener("orientationchange", handleOrientationChange);
+      }
+      if (typeof document !== 'undefined') {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
     };
   }, []);
 

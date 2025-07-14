@@ -6,8 +6,11 @@ const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
 // Notification service state
 let fcmToken = null;
-const isSupported = "serviceWorker" in navigator && "PushManager" in window;
 let isPermissionGranted = false;
+
+// Check if running in browser and if notifications are supported
+const isClient = () => typeof window !== 'undefined';
+const isSupported = () => isClient() && "serviceWorker" in navigator && "PushManager" in window;
 
 const notificationService = {
   // Callback function for notification clicks
@@ -18,7 +21,7 @@ const notificationService = {
 
   // Set up service worker message listener for notification clicks
   setupServiceWorkerMessageListener() {
-    if ("serviceWorker" in navigator) {
+    if (isClient() && "serviceWorker" in navigator) {
       navigator.serviceWorker.addEventListener("message", (event) => {
         if (event.data && event.data.type === "NOTIFICATION_CLICK") {
           // Call the callback if it's set
@@ -45,250 +48,306 @@ const notificationService = {
 
   // Check if notifications are supported
   isNotificationSupported() {
-    return isSupported;
+    return isSupported();
   },
 
-  // Request notification permission
+  // Request notification permission from user
   async requestPermission() {
+    if (!isClient()) {
+      console.warn("Cannot request permission on server side");
+      return false;
+    }
+
+    if (!isSupported()) {
+      console.warn("Notifications are not supported in this browser");
+      return false;
+    }
+
     try {
-      if (!isSupported) {
-        return false;
-      }
-
-      // Check current permission status
-      let permission = Notification.permission;
-
-      if (permission === "default") {
-        // Request permission
-        permission = await Notification.requestPermission();
-      }
-
-      if (permission === "granted") {
-        isPermissionGranted = true;
-        return true;
+      const permission = await Notification.requestPermission();
+      isPermissionGranted = permission === "granted";
+      
+      if (isPermissionGranted) {
+        console.log("Notification permission granted");
       } else {
-        isPermissionGranted = false;
-        return false;
+        console.log("Notification permission denied");
       }
+      
+      return isPermissionGranted;
     } catch (error) {
+      console.error("Error requesting notification permission:", error);
       return false;
     }
   },
 
-  // Get FCM token
+  // Get FCM token for this device
   async getFCMToken() {
+    if (!isClient()) {
+      console.warn("Cannot get FCM token on server side");
+      return null;
+    }
+
+    if (!isSupported()) {
+      console.warn("Firebase messaging is not supported");
+      return null;
+    }
+
     try {
-      if (!isPermissionGranted) {
-        const permissionGranted = await this.requestPermission();
-        if (!permissionGranted) {
-          throw new Error("Notification permission not granted");
-        }
-      }
-
-      // Register service worker if not already registered
-      await this.registerServiceWorker();
-
-      // Get FCM token
-      const currentToken = await getToken(messaging, {
-        vapidKey: VAPID_KEY,
-      });
-
-      if (currentToken) {
-        fcmToken = currentToken;
-
-        // Store token in localStorage for future use
-        localStorage.setItem("fcmToken", currentToken);
-
-        return currentToken;
-      } else {
+      const messagingInstance = messaging();
+      if (!messagingInstance) {
+        console.warn("Firebase messaging not initialized");
         return null;
       }
+
+      // Request permission first
+      await this.requestPermission();
+      
+      if (!isPermissionGranted) {
+        console.warn("Notification permission not granted");
+        return null;
+      }
+
+      // Get the token
+      fcmToken = await getToken(messagingInstance, {
+        vapidKey: VAPID_KEY,
+      });
+      
+      if (fcmToken) {
+        console.log("FCM token received:", fcmToken);
+      } else {
+        console.log("No FCM token available");
+      }
+      
+      return fcmToken;
     } catch (error) {
-      throw error;
+      console.error("Error getting FCM token:", error);
+      return null;
     }
   },
 
-  // Register service worker
+  // Register service worker for background notifications
   async registerServiceWorker() {
+    if (!isClient() || !("serviceWorker" in navigator)) {
+      console.warn("Service Worker not supported");
+      return false;
+    }
+
     try {
-      if ("serviceWorker" in navigator) {
-        const registration = await navigator.serviceWorker.register(
-          "/firebase-messaging-sw.js"
-        );
-        return registration;
-      }
+      const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+      console.log("Service Worker registered successfully:", registration);
+      return true;
     } catch (error) {
-      throw error;
+      console.error("Service Worker registration failed:", error);
+      return false;
     }
   },
 
-  // Subscribe to topic using your API
+  // Subscribe to a topic for push notifications
   async subscribeToTopic(groupId) {
+    if (!isClient()) {
+      console.warn("Cannot subscribe to topic on server side");
+      return false;
+    }
+
     try {
-      if (!fcmToken) {
-        fcmToken = await this.getFCMToken();
+      const token = await this.getFCMToken();
+      if (!token) {
+        console.warn("No FCM token available for topic subscription");
+        return false;
       }
 
-      if (!fcmToken) {
-        throw new Error("FCM token not available");
-      }
-
-      const response = await subscribeToTopic(fcmToken, groupId);
-
-      return response;
+      const response = await subscribeToTopic(token, groupId);
+      console.log(`Subscribed to topic for group ${groupId}:`, response);
+      return true;
     } catch (error) {
-      throw error;
+      console.error(`Error subscribing to topic for group ${groupId}:`, error);
+      return false;
     }
   },
 
-  // Note: Unsubscribe functionality not available - only subscribe-topic API exists
+  // Unsubscribe from a topic
   async unsubscribeFromTopic(groupId) {
-    throw new Error("Unsubscribe functionality not available");
+    // Implementation would depend on your backend API
+    console.log(`Unsubscribing from topic for group ${groupId}`);
   },
 
-  // Listen for foreground messages
+  // Set up listener for foreground messages
   setupForegroundMessageListener(callback) {
-    try {
-      onMessage(messaging, (payload) => {
-        console.log("📧 New FCM notification received:", payload);
+    if (!isClient()) {
+      console.warn("Cannot setup message listener on server side");
+      return () => {}; // Return empty unsubscribe function
+    }
 
-        // CALL THE NOTIFICATION RECEIVED CALLBACK TO REFRESH NOTIFICATION LIST
+    try {
+      const messagingInstance = messaging();
+      if (!messagingInstance) {
+        console.warn("Firebase messaging not initialized");
+        return () => {};
+      }
+
+      const unsubscribe = onMessage(messagingInstance, (payload) => {
+        console.log("Foreground message received:", payload);
+        
+        // Call the notification received callback if set
         if (
           this._notificationReceivedCallback &&
           typeof this._notificationReceivedCallback === "function"
         ) {
           this._notificationReceivedCallback(payload);
         }
-
-        // Show notification if browser is in focus
+        
+        // Show the notification
+        this.showForegroundNotification(payload);
+        
+        // Call the provided callback
         if (callback && typeof callback === "function") {
           callback(payload);
-        } else {
-          // Default notification display
-          this.showForegroundNotification(payload);
         }
       });
-    } catch (error) {}
+      
+      return unsubscribe;
+    } catch (error) {
+      console.error("Error setting up foreground message listener:", error);
+      return () => {};
+    }
   },
 
-  // Show notification when app is in foreground
+  // Show notification in foreground
   showForegroundNotification(payload) {
-    try {
-      const notificationTitle =
-        payload.notification?.title || "SAGE News Update";
-      const notificationOptions = {
-        body: payload.notification?.body || "You have a new update",
-        icon: "/sage-icon.jpg",
-        badge: "/sage-icon.jpg",
-        tag: "sage-notification",
-        requireInteraction: true,
-        // Note: actions are not supported for direct Notification constructor
-        // They only work with ServiceWorkerRegistration.showNotification()
-      };
+    if (!isClient()) {
+      console.warn("Cannot show notification on server side");
+      return;
+    }
 
-      const notification = new Notification(
-        notificationTitle,
-        notificationOptions
-      );
+    if (!isSupported()) {
+      console.warn("Notifications not supported");
+      return;
+    }
 
-      // Handle click event manually since actions aren't supported
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-
-        // Handle any custom data from payload
-        if (payload.data) {
-          // Call the callback if it's set (same as service worker messages)
-          if (
-            this._notificationClickCallback &&
-            typeof this._notificationClickCallback === "function"
-          ) {
-            this._notificationClickCallback(payload.data);
+    const { notification, data } = payload;
+    
+    if (notification) {
+      const { title, body, icon } = notification;
+      
+      // Show browser notification
+      if (Notification.permission === "granted") {
+        const notificationOptions = {
+          body: body,
+          icon: icon || "/images/sage-icon.jpg",
+          data: data,
+          requireInteraction: true,
+          actions: [
+            {
+              action: "open",
+              title: "Open"
+            },
+            {
+              action: "dismiss",
+              title: "Dismiss"
+            }
+          ]
+        };
+        
+        const notif = new Notification(title, notificationOptions);
+        
+        notif.onclick = () => {
+          // Handle notification click
+          if (data && this._notificationClickCallback) {
+            this._notificationClickCallback(data);
           }
-        }
-      };
-    } catch (error) {}
+          notif.close();
+        };
+      }
+    }
   },
 
-  // Initialize notification service
+  // Initialize the notification service
   async initialize() {
+    if (!isClient()) {
+      console.warn("Cannot initialize notification service on server side");
+      return false;
+    }
+
     try {
-      if (!isSupported) {
-        return false;
-      }
-
-      // Check if permission is already granted
-      if (Notification.permission === "granted") {
-        isPermissionGranted = true;
-
-        // Try to get existing token from localStorage
-        const storedToken = localStorage.getItem("fcmToken");
-        if (storedToken) {
-          fcmToken = storedToken;
-        }
-      }
-
-      // Setup foreground message listener
-      this.setupForegroundMessageListener();
-
-      // Setup service worker message listener for notification clicks
+      console.log("Initializing notification service...");
+      
+      // Register service worker first
+      await this.registerServiceWorker();
+      
+      // Set up message listeners
       this.setupServiceWorkerMessageListener();
-
+      this.setupForegroundMessageListener();
+      
+      // Get FCM token
+      await this.getFCMToken();
+      
+      console.log("Notification service initialized successfully");
       return true;
     } catch (error) {
+      console.error("Error initializing notification service:", error);
       return false;
     }
   },
 
-  // Get current FCM token (without requesting new one)
+  // Get current FCM token
   getCurrentToken() {
-    return fcmToken || localStorage.getItem("fcmToken");
+    return fcmToken;
   },
 
-  // Check permission status
+  // Get permission status
   getPermissionStatus() {
-    return Notification.permission;
+    if (!isClient()) return 'unavailable';
+    return isPermissionGranted ? 'granted' : 'denied';
   },
 
-  // Helper function to extract notification data from URL parameters
+  // Get notification data from URL parameters (for handling notification clicks)
   getNotificationDataFromURL() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const notificationData = {};
+    if (!isClient()) return null;
 
-    if (urlParams.has("group_id")) {
-      notificationData.group_id = urlParams.get("group_id");
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const groupId = urlParams.get('group_id');
+      const country = urlParams.get('country');
+      
+      if (groupId) {
+        return {
+          group_id: groupId,
+          country: country || 'India'
+        };
+      }
+    } catch (error) {
+      console.error("Error parsing notification data from URL:", error);
     }
-
-    if (urlParams.has("country")) {
-      notificationData.country = urlParams.get("country");
-    }
-
-    return Object.keys(notificationData).length > 0 ? notificationData : null;
+    
+    return null;
   },
 
-  // Helper function to clear notification parameters from URL
+  // Clear notification data from URL
   clearNotificationDataFromURL() {
-    const url = new URL(window.location);
-    url.searchParams.delete("group_id");
-    url.searchParams.delete("country");
+    if (!isClient()) return;
 
-    // Update the URL without reloading the page
-    window.history.replaceState({}, document.title, url.toString());
+    try {
+      const url = new URL(window.location);
+      url.searchParams.delete('group_id');
+      url.searchParams.delete('country');
+      window.history.replaceState({}, document.title, url.pathname + url.hash);
+    } catch (error) {
+      console.error("Error clearing notification data from URL:", error);
+    }
   },
 
-  // Test utility - simulate notification click (for development/testing)
+  // Simulate notification click for testing
   simulateNotificationClick(groupId, country = "India") {
-    if (
-      this._notificationClickCallback &&
-      typeof this._notificationClickCallback === "function"
-    ) {
+    if (!isClient()) return;
+
+    console.log(`Simulating notification click for group ${groupId}`);
+    if (this._notificationClickCallback) {
       this._notificationClickCallback({
         group_id: groupId,
-        country: country,
+        country: country
       });
-    } else {
     }
-  },
+  }
 };
 
 export default notificationService;
