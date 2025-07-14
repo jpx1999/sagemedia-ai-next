@@ -1,17 +1,17 @@
 import { useState, useRef, useEffect } from "react";
-import { useRouter, useParams, usePathname } from "next/navigation";
-import DashboardLayout from "./layouts/DashboardLayout";
-import Sidebar from "./Sidebar";
-import Content from "./content/Content";
-import RightSidebar from "./RightSidebar";
+import { useParams, usePathname, useSearchParams } from "next/navigation";
+import DashboardLayout from "../components/layouts/DashboardLayout";
+import Sidebar from "../components/Sidebar";
+import Content from "../components/content/Content";
+import RightSidebar from "../components/RightSidebar";
 import { toast, Toaster } from "react-hot-toast";
-import NewGroupPopup from "./NewGroupPopup";
-import SuccessPopup from "./SuccessPopup";
-import SectorSidebar from "./SectorSidebar";
-import SummaryDetail from "./SummaryDetail";
-import Loader from "./newsloader/Loader";
-import DynamicMeta from "./DynamicMeta";
-import { useMobileNavigation } from "../hooks/useMobileNavigation";
+// REMOVED: import { Helmet } from "react-helmet-async"; - DynamicMeta handles this
+import NewGroupPopup from "../components/NewGroupPopup";
+import SuccessPopup from "../components/SuccessPopup";
+import SectorSidebar from "../components/SectorSidebar";
+import SummaryDetail from "../components/SummaryDetail";
+import Loader from "../components/newsloader/Loader";
+import DynamicMeta from "../components/DynamicMeta";
 
 import {
   fetchNewsListings,
@@ -30,7 +30,6 @@ import {
   getSectorNews,
   getSettings,
   getUserSelection,
-  globalSubscribe
 } from "../helpers/api";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -59,12 +58,13 @@ import { setcurrentTheme } from "../store/slice/themeSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFaceFrown } from "@fortawesome/free-solid-svg-icons";
 import notificationService from "../utils/notificationService";
+import { globalSubscribe } from "../helpers/api";
+import { useRouter } from "next/navigation";
+import SignUpAndLogin from "app/login/page";
+import { useMobileNavigation } from "hooks/useMobileNavigation";
 
 // Function to get or create device ID
 const getDeviceId = () => {
-  // Only run on client side
-  if (typeof window === 'undefined') return 'ssr-device-id';
-  
   let deviceId = localStorage.getItem("fcm_device_id");
 
   if (!deviceId) {
@@ -99,20 +99,22 @@ const getDeviceId = () => {
   return deviceId;
 };
 
-const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
+const NewsIntelligence = ({
+  
+  partialAccess = false,
+  newsIdParam,
+}) => {
   const isDarkTheme = true;
   const router = useRouter();
   const pathname = usePathname();
-  const params = useParams();
-
-  // Initialize mobile navigation handlers
-  useMobileNavigation();
-
+  const searchParams = useSearchParams();
+  const { newsId } = useParams();
+useMobileNavigation()
   const rightSidebarVisible = useSelector(
     (state) => state.newsDetails.rightSidebarVisible
   );
 
-  const currentNewsId = newsIdParam || params?.newsId;
+  const currentNewsId = newsIdParam || newsId;
 
   // News state
   const dispatch = useDispatch();
@@ -988,7 +990,9 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
 
         if (searchResults.length > 0 && !country) {
           dispatch(setActiveNewsId(searchResults[0].id));
-          router.replace(`/news-intelligence/newsid/${searchResults[0].id}`);
+          router.push(`/news-intelligence/newsid/${searchResults[0].id}`, {
+            replace: true,
+          });
         }
 
         setIsSearching(false);
@@ -1054,7 +1058,9 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
 
           if (newSearchResults.length > 0) {
             dispatch(setActiveNewsId(newSearchResults[0].id));
-            router.replace(`/news-intelligence/newsid/${newSearchResults[0].id}`);
+            router.push(`/news-intelligence/newsid/${newSearchResults[0].id}`, {
+              replace: true,
+            });
             dispatch(removeHighlightFromItem(newSearchResults[0].id));
           }
         }
@@ -1148,7 +1154,9 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
 
         if (newsItems.length > 0) {
           dispatch(setActiveNewsId(newsItems[0].id));
-          router.replace(`/news-intelligence/newsid/${newsItems[0].id}`);
+          router.push(`/news-intelligence/newsid/${newsItems[0].id}`, {
+            replace: true,
+          });
         }
       } else {
         dispatch(setMenuItems([]));
@@ -1373,7 +1381,9 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
       if (shouldAutoSelect) {
         console.log("✅ AUTO-SELECTING first news item:", menuItems[0].id);
         dispatch(setActiveNewsId(menuItems[0].id));
-        router.replace(`/news-intelligence/newsid/${menuItems[0].id}`);
+        router.push(`/news-intelligence/newsid/${menuItems[0].id}`, {
+          replace: true,
+        });
         return true;
       }
 
@@ -1413,7 +1423,9 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
       if (!isInSearchMode || allowInSearchMode) {
         console.log("🆘 BACKUP: Force selecting first item on menu change");
         dispatch(setActiveNewsId(menuItems[0].id));
-        router.replace(`/news-intelligence/newsid/${menuItems[0].id}`);
+        router.push(`/news-intelligence/newsid/${menuItems[0].id}`, {
+          replace: true,
+        });
       }
     }
   }, [
@@ -1427,7 +1439,7 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
   // Update URL when activeNewsId changes
   useEffect(() => {
     if (activeNewsId && (!currentNewsId || currentNewsId !== activeNewsId)) {
-      router.replace(`/news-intelligence/newsid/${activeNewsId}`);
+      router.push(`/news-intelligence/newsid/${activeNewsId}`, { replace: true });
     }
   }, [activeNewsId]);
 
@@ -1466,21 +1478,13 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
   // Mobile detection useEffect
   useEffect(() => {
     const checkMobile = () => {
-      // Only run on client side
-      if (typeof window === 'undefined') return;
       setIsMobile(window.innerWidth < 768);
     };
 
     checkMobile();
-    if (typeof window !== 'undefined') {
-      window.addEventListener("resize", checkMobile);
-    }
+    window.addEventListener("resize", checkMobile);
 
-    return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener("resize", checkMobile);
-      }
-    };
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   // Add cleanup in the component's cleanup function and clear stale search state
@@ -1517,6 +1521,14 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
       autoSearchTopicRef.current = null;
     };
   }, []);
+
+  // Reset auto-search refs only when coming from a new external navigation
+  // Note: location.state and location.key don't exist in Next.js
+  // This functionality may need to be implemented differently if needed
+  useEffect(() => {
+    // TODO: Implement if navigation state handling is needed
+    // In Next.js, we might need to use query parameters or a different approach
+  }, [pathname]);
 
   // Process user selection on mount
   useEffect(() => {
@@ -1753,7 +1765,9 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
 
           if (newsItems.length > 0) {
             dispatch(setActiveNewsId(newsItems[0].id));
-            router.replace(`/news-intelligence/newsid/${newsItems[0].id}`);
+            router.push(`/news-intelligence/newsid/${newsItems[0].id}`, {
+              replace: true,
+            });
           }
 
           toast.success(
@@ -1820,6 +1834,64 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
     setSearchSuggestions([]);
     handleSearch(searchTerm);
   };
+
+  // Handle auto-search from search history
+  // Note: This functionality relied on location.state which doesn't exist in Next.js
+  useEffect(() => {
+    const handleAutoSearchFromHistory = async () => {
+      // TODO: If auto-search from history is needed, implement using query parameters
+      // or a different state management approach
+      
+      const searchTopic = autoSearchTopicRef.current;
+
+      if (
+        searchTopic &&
+        typeof searchTopic === "string" &&
+        searchTopic.trim() !== "" &&
+        !autoSearchProcessed &&
+        !autoSearchStartedRef.current &&
+        isInitialized &&
+        isLocationInitialized
+      ) {
+        autoSearchStartedRef.current = true;
+        setAutoSearchFromHistory(true);
+        setAutoSearchProcessed(true);
+
+        setSearchText(searchTopic);
+        setIsInSearchMode(true);
+
+        dispatch(setMenuItems([]));
+        setNewsData(null);
+        dispatch(setActiveNewsId(null));
+
+        try {
+          await handleSearch(searchTopic);
+          autoSearchTopicRef.current = null;
+        } catch (error) {
+          setError(`Failed to search for "${searchTopic}"`);
+          autoSearchTopicRef.current = null;
+        }
+      }
+    };
+
+    handleAutoSearchFromHistory();
+  }, [isInitialized, isLocationInitialized, pathname, autoSearchProcessed]);
+
+  // Handle navigation from search history
+  // Note: This functionality relied on location.state which doesn't exist in Next.js
+  useEffect(() => {
+    const handleHistoryNavigation = async () => {
+      // TODO: If navigation from search history is needed, implement using query parameters
+      // or a different state management approach
+      
+      // For now, this functionality is disabled since location.state doesn't exist in Next.js
+      // Consider using searchParams or a different approach if this feature is required
+    };
+
+    if (isInitialized && isLocationInitialized) {
+      handleHistoryNavigation();
+    }
+  }, [isInitialized, isLocationInitialized]);
 
   // Initialize notifications on mount
   useEffect(() => {
@@ -2074,13 +2146,12 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
                   ✕
                 </button>
               </div>
-              {/* Note: SignUpAndLogin component would need to be adapted for Next.js */}
-              {/* <SignUpAndLogin
+              <SignUpAndLogin
                 isDarkTheme={isDarkTheme}
                 isModal={true}
                 onLoginSuccess={handleLoginSuccess}
                 redirectAfterLogin={false}
-              /> */}
+              />
             </div>
           </div>
         )}
@@ -2089,4 +2160,4 @@ const NewsIntelligence = ({ partialAccess = false, newsIdParam }) => {
   );
 };
 
-export default NewsIntelligence; 
+export default NewsIntelligence;
