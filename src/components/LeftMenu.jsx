@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import useWindowSize from "../hooks/useWindowSize";
@@ -17,11 +17,11 @@ const LeftMenu = ({
   isKeyboardOpen = false,
   isIOS = false,
 }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const [labelOpacity, setLabelOpacity] = useState(menuVisible ? 1 : 0);
   const opacityTimeoutRef = useRef(null);
-  const [currentPath, setCurrentPath] = useState(location.pathname);
+  const [currentPath, setCurrentPath] = useState(pathname);
   const menuRef = useRef(null); // Reference for the menu itself
   const { width: windowWidth } = useWindowSize();
 
@@ -31,8 +31,8 @@ const LeftMenu = ({
 
   // Track location changes to ensure active state updates
   useEffect(() => {
-    setCurrentPath(location.pathname);
-  }, [location]);
+    setCurrentPath(pathname);
+  }, [pathname]);
 
   // This effect handles closing the menu when clicking outside
   useEffect(() => {
@@ -107,7 +107,7 @@ const LeftMenu = ({
       return true;
     }
     // Check if current path starts with the menu path (for nested routes)
-    if (path && path !== "/" && currentPath.startsWith(path)) {
+    if (path && path !== "/" && currentPath?.startsWith(path)) {
       return true;
     }
     return false;
@@ -303,7 +303,7 @@ const LeftMenu = ({
       return;
     }
 
-    navigate(path);
+    router.push(path);
 
     // For mobile devices, close the menu after navigation
     if (windowWidth < 640) {

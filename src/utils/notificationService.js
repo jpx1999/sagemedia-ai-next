@@ -2,7 +2,7 @@ import { messaging, getToken, onMessage } from "../firebase/firebaseConfig";
 import { subscribeToTopic } from "../helpers/api";
 
 // VAPID key - you'll need to get this from your Firebase console
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
 // Notification service state
 let fcmToken = null;

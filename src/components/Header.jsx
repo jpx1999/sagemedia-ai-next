@@ -5,7 +5,7 @@ import {
   faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { handleLogout } from "../helpers/authHelper";
 import Settings from "./Settings";
 import RemainingSearch from "./RemainingSearch";
@@ -45,7 +45,7 @@ const Header = ({
   showSearch = true,
   clearRefreshNews,
 }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [isSearching, setIsSearching] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const userData = useSelector((state) => state.auth.user);
@@ -568,7 +568,7 @@ const Header = ({
   const handleNotificationClick = (notification) => {
     // You can add navigation logic here based on notification.actionUrl
     if (notification.actionUrl) {
-      navigate(notification.actionUrl);
+      router.push(notification.actionUrl);
     }
     // Add any other notification click handling logic here
   };
@@ -1016,7 +1016,7 @@ const Header = ({
                 {!subscriptionStatus && (
                   <div className="px-4 py-1 pb-3 border-b border-[#2A3435]">
                     <button
-                      onClick={() => navigate("/subscription")}
+                      onClick={() => router.push("/subscription")}
                       title="Subscribe to get more searches"
                       className="border-none rounded-full px-4 py-1 cursor-pointer font-medium bg-gradient-to-br from-[#CBFEFF] to-[#6ABCFF] text-gray-900"
                     >
@@ -1078,7 +1078,7 @@ const Header = ({
                     fontWeight: "400",
                     minHeight: "44px", // Better touch target
                   }}
-                  onClick={() => navigate("/subscription")}
+                  onClick={() => router.push("/subscription")}
                 >
                   <img
                     src={"/images/page_info-dark.svg"}
