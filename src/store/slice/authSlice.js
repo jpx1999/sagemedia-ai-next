@@ -2,6 +2,17 @@ import { createSlice } from "@reduxjs/toolkit";
 
 // Initialize state from localStorage if available
 const getInitialState = () => {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined') {
+    return {
+      isLoggedIn: false,
+      user: null,
+      token: null,
+      refreshToken: null,
+      role: null,
+    };
+  }
+
   const authData = localStorage.getItem("authData");
   const accessToken = localStorage.getItem("accessToken");
   const refreshToken = localStorage.getItem("refreshToken");
@@ -53,10 +64,12 @@ export const authSlice = createSlice({
       state.token = null;
       state.refreshToken = null;
 
-      // Clear localStorage
-      localStorage.removeItem("authData");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
+      // Clear localStorage (only in browser environment)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem("authData");
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+      }
     },
   },
 });

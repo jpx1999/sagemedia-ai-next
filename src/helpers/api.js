@@ -81,6 +81,7 @@ export const getUserDetails = async () => {
 };
 // Helper function to get the current auth token
 export const getAuthToken = () => {
+  if (typeof window === 'undefined') return null;
   const userData = localStorage.getItem("authData");
   return userData ? JSON.parse(userData).token : null;
 };

@@ -14,10 +14,12 @@ export const handleLogout = async () => {
     await signOut(auth);
 
     // Dispatch logout action to Redux
-    localStorage.removeItem("role");
-    localStorage.removeItem("authData");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("role");
+      localStorage.removeItem("authData");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+    }
     store.dispatch(logout());
 
     // Redirect to login page
@@ -26,10 +28,12 @@ export const handleLogout = async () => {
     console.error("Error during logout:", error);
 
     // Even if Firebase logout fails, clear local data
-    localStorage.removeItem("role");
-    localStorage.removeItem("authData");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("role");
+      localStorage.removeItem("authData");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+    }
 
     // Dispatch logout action to Redux
     store.dispatch(logout());
@@ -68,6 +72,8 @@ export const handleLogout = async () => {
  */
 export const getCurrentUser = () => {
   try {
+    if (typeof window === 'undefined') return null;
+    
     const authData = localStorage.getItem("authData");
     if (!authData) return null;
 
@@ -84,6 +90,8 @@ export const getCurrentUser = () => {
  */
 export const getAccessToken = () => {
   try {
+    if (typeof window === 'undefined') return null;
+    
     const token = localStorage.getItem("accessToken");
     if (!token) return null;
 
@@ -96,7 +104,7 @@ export const getAccessToken = () => {
   } catch (error) {
     console.error("Error parsing access token:", error);
     // Try to return the raw token if JSON parsing fails
-    return localStorage.getItem("accessToken");
+    return typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
   }
 };
 
@@ -104,13 +112,15 @@ export const getAccessToken = () => {
  * Gets the current refresh token
  */
 export const getRefreshToken = () => {
-  return localStorage.getItem("refreshToken");
+  return typeof window !== 'undefined' ? localStorage.getItem("refreshToken") : null;
 };
 
 /**
  * Updates the access and refresh tokens
  */
 export const updateTokens = (accessToken, refreshToken) => {
+  if (typeof window === 'undefined') return;
+  
   if (accessToken) {
     localStorage.setItem("accessToken", accessToken);
   }
@@ -125,6 +135,8 @@ export const updateTokens = (accessToken, refreshToken) => {
  */
 export const canRestoreSession = () => {
   try {
+    if (typeof window === 'undefined') return false;
+    
     const authData = localStorage.getItem("authData");
     const accessToken = localStorage.getItem("accessToken");
     const refreshToken = localStorage.getItem("refreshToken");

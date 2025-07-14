@@ -69,8 +69,8 @@ api.interceptors.response.use(
 
           if (!user) {
             // Check if we have any stored tokens before giving up
-            const storedAuthData = localStorage.getItem("authData");
-            const storedAccessToken = localStorage.getItem("accessToken");
+            const storedAuthData = typeof window !== 'undefined' ? localStorage.getItem("authData") : null;
+            const storedAccessToken = typeof window !== 'undefined' ? localStorage.getItem("accessToken") : null;
 
             if (!storedAuthData && !storedAccessToken) {
               throw new Error("Invalid Code");
@@ -80,7 +80,9 @@ api.interceptors.response.use(
           }
 
           const newAccessToken = await user.getIdToken(true);
-          localStorage.setItem("accessToken", newAccessToken);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem("accessToken", newAccessToken);
+          }
           updateTokens(newAccessToken, user.refreshToken);
           store.dispatch(
             updateReduxTokens({
