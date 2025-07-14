@@ -1,98 +1,123 @@
-'use client'
+import React from "react";
+import Layout from "@/components/Layout";
 
-import { useState } from 'react'
-import Link from 'next/link'
-
-export default function PrivacyPolicy() {
-  const [isDarkTheme, setIsDarkTheme] = useState(true)
-
-  return (
-    <div className={`${isDarkTheme ? 'bg-black text-white' : 'bg-white text-black'} min-h-screen font-poppins`}>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <Link href="/" className="text-blue-500 hover:underline">← Back to Home</Link>
-          <button
-            onClick={() => setIsDarkTheme(!isDarkTheme)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-          >
-            {isDarkTheme ? 'Light' : 'Dark'} Mode
-          </button>
-        </div>
-
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-5xl font-bold mb-8">Privacy Policy</h1>
-          
-          <div className="prose prose-lg max-w-none text-white">
-            <p className="text-xl opacity-80 mb-8">
-              Last updated: January 16, 2024
+const PrivacyPolicy = ({ isDarkTheme }) => {
+  return (<Layout isDarkTheme={isDarkTheme}>
+        <div className="px-6 py-6 md:py-12 max-w-7xl mx-auto">
+          <h1 className="text-2xl md:text-4xl font-medium pb-3 md:pb-5">
+            Privacy Policy
+          </h1>
+          <div className="mb-8 md:mb-12 pt-4 border-t border-gray-700 dark:border-gray-700">
+            <p
+              className={`text-sm ${
+                isDarkTheme ? "text-gray-400" : "text-gray-600"
+              }`}
+            >
+              Last updated: {new Date().toLocaleDateString()}
             </p>
+          </div>
 
-            <div className="space-y-8">
-              <section>
-                <h2 className="text-2xl font-bold mb-4">Information We Collect</h2>
-                <p className="opacity-80 leading-relaxed mb-4">
-                  We collect information you provide directly to us, such as when you create an account, subscribe to our service, or contact us for support.
-                </p>
-                <ul className="list-disc list-inside opacity-80 space-y-2">
-                  <li>Account information (name, email, password)</li>
-                  <li>Profile information and preferences</li>
-                  <li>Payment and billing information</li>
-                  <li>Search queries and usage data</li>
-                  <li>Communications with our support team</li>
-                </ul>
-              </section>
+          <div className="space-y-6 md:space-y-8">
+            <section>
+              <h2 className="text-xl font-medium mb-2 text-gray-300">
+                1. Information We Collect
+              </h2>
+              <p className="text-lg leading-relaxed text-gray-300">
+                We collect personal information such as name, email address, and
+                payment details when you register for the Service. We may also
+                collect usage data, including IP addresses, browser types, and
+                access times.
+              </p>
+              <p className="text-lg leading-relaxed text-gray-300 mt-4">
+                Additionally, we collect location information to provide you
+                with curated news content relevant to your country and region.
+                This helps us deliver personalized and geographically relevant
+                news updates through our Service.
+              </p>
+            </section>
 
-              <section>
-                <h2 className="text-2xl font-bold mb-4">How We Use Your Information</h2>
-                <p className="opacity-80 leading-relaxed mb-4">
-                  We use the information we collect to provide, maintain, and improve our services.
-                </p>
-                <ul className="list-disc list-inside opacity-80 space-y-2">
-                  <li>Provide and maintain our service</li>
-                  <li>Process payments and send billing information</li>
-                  <li>Improve our AI algorithms and recommendations</li>
-                  <li>Send you technical notices and support messages</li>
-                  <li>Respond to your comments and questions</li>
-                </ul>
-              </section>
+            <section>
+              <h2 className="text-xl font-medium mb-2 text-gray-300">
+                2. Use of Information
+              </h2>
+              <p className="text-lg leading-relaxed text-gray-300">
+                Your information is used to:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-lg">
+                <li>Provide and maintain the Service</li>
+                <li>Process transactions</li>
+                <li>Communicate with you about updates and promotions</li>
+                <li>Improve our Service</li>
+              </ul>
+            </section>
 
-              <section>
-                <h2 className="text-2xl font-bold mb-4">Information Sharing</h2>
-                <p className="opacity-80 leading-relaxed">
-                  We do not sell, trade, or otherwise transfer your personal information to third parties without your consent, except as described in this policy.
-                </p>
-              </section>
+            <section>
+              <h2 className="text-xl font-medium mb-2 text-gray-300">
+                3. Data Sharing
+              </h2>
+              <p className="text-lg leading-relaxed text-gray-300">
+                We do not sell your personal information. We may share data with
+                third-party service providers for payment processing and
+                analytics, under strict confidentiality agreements.
+              </p>
+            </section>
 
-              <section>
-                <h2 className="text-2xl font-bold mb-4">Data Security</h2>
-                <p className="opacity-80 leading-relaxed">
-                  We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
-                </p>
-              </section>
+            <section>
+              <h2 className="text-xl font-medium mb-2 text-gray-300">
+                4. Data Security
+              </h2>
+              <p className="text-lg leading-relaxed text-gray-300">
+                We implement industry-standard security measures to protect your
+                data. However, no method of transmission over the Internet is
+                100% secure.
+              </p>
+            </section>
 
-              <section>
-                <h2 className="text-2xl font-bold mb-4">Your Rights</h2>
-                <p className="opacity-80 leading-relaxed mb-4">
-                  You have certain rights regarding your personal information:
-                </p>
-                <ul className="list-disc list-inside opacity-80 space-y-2">
-                  <li>Access and update your information</li>
-                  <li>Delete your account and data</li>
-                  <li>Export your data</li>
-                  <li>Opt out of communications</li>
-                </ul>
-              </section>
+            <section>
+              <h2 className="text-xl font-medium mb-2 text-gray-300">
+                5. Cookies
+              </h2>
+              <p className="text-lg leading-relaxed text-gray-300">
+                sagemedia.ai uses cookies to enhance user experience. You can
+                control cookie settings through your browser.
+              </p>
+            </section>
 
-              <section>
-                <h2 className="text-2xl font-bold mb-4">Contact Us</h2>
-                <p className="opacity-80 leading-relaxed">
-                  If you have any questions about this Privacy Policy, please contact us at privacy@sagemedia.ai
-                </p>
-              </section>
-            </div>
+            <section>
+              <h2 className="text-xl font-medium mb-2 text-gray-300">
+                6. User Rights
+              </h2>
+              <p className="text-lg leading-relaxed text-gray-300">
+                You have the right to access, correct, or delete your personal
+                information. To exercise these rights, contact us at{" "}
+                <a
+                  href="mailto:hello@sagemedia.ai"
+                  className={`${
+                    isDarkTheme
+                      ? "text-blue-400 hover:text-blue-300"
+                      : "text-blue-600 hover:text-blue-800"
+                  } underline transition-colors`}
+                >
+                  hello@sagemedia.ai
+                </a>
+                .
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-medium mb-2 text-gray-300">
+                7. Changes to This Policy
+              </h2>
+              <p className="text-lg leading-relaxed text-gray-300">
+                We may update this Privacy Policy from time to time. Changes
+                will be posted on this page with an updated effective date.
+              </p>
+            </section>
           </div>
         </div>
-      </div>
-    </div>
-  )
-} 
+      </Layout>
+   
+  );
+};
+
+export default PrivacyPolicy;
