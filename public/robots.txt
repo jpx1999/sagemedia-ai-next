@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /
+
+# Development/Staging environment
+# Disallow all bots from crawling the development site
+# This prevents development/staging sites from being indexed

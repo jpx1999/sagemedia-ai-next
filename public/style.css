@@ -1,0 +1,24 @@
+/* styles.css */
+.globalScroll{position: relative; height: 100vh; overflow-y: auto;}
+.globalScroll::-webkit-scrollbar {
+  width: 2px; 
+}
+
+.globalScroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #CBFEFF, #6ABCFF); 
+  border-radius: 10px;
+}
+.globalScroll::-webkit-scrollbar-track {
+  background: transparent; 
+}
+.globalScroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #B3F4FF, #57B4FF); 
+}
+.chartHeading span{color:#fff; display: block;}
+.chartHeading span:first-child{width: 2px; background: #6ABCFF; height: 100%; position: absolute; left: 0; top: 0;}
+.ai-search-hld{position: absolute; bottom: 0; width: 100%; background-color: #000; padding: 10px 40px; padding-bottom: 50px; left: 50%; transform: translate(-50%, 0);}
+
+.field-hld{display: flex; flex-direction: column; margin-bottom: 15px;}
+.field-hld label{margin-bottom: 10px;}
+.sector-popup-icon{position: absolute; bottom: 70px; right: 30px;}
+.checkBox{width: 18px; height: 18px; }
