@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../../store/slice/authSlice";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSpinner,
@@ -19,36 +19,14 @@ import { updateTokens } from "../../helpers/authHelper";
 import { sendOTP, verifyOTP, checkEmailExists, authUser } from "../../helpers/api";
 import { Toaster, toast } from "react-hot-toast";
 import Layout from "../../components/Layout";
-import AuthActionHandler from "../../components/AuthActionHandler";
 import {
   formatLocationForAPI,
   getAuthenticationData,
 } from "../../utils/locationUtils";
-import Image from "next/image";
 
 // Helper function to check if email is Gmail
 const isGmailAccount = (email) => {
   return email && email.toLowerCase().endsWith("@gmail.com");
-};
-
-// Safe localStorage access for SSR
-const safeLocalStorage = {
-  getItem: (key) => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(key);
-    }
-    return null;
-  },
-  setItem: (key, value) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(key, value);
-    }
-  },
-  removeItem: (key) => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(key);
-    }
-  }
 };
 
 const SignUpAndLogin = ({
@@ -57,10 +35,12 @@ const SignUpAndLogin = ({
   redirectAfterLogin = true,
   isDarkTheme,
 }) => {
+  const base_uri = process.env.NEXT_PUBLIC_API_BASE_URL;
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [loading, setLoading] = useState(false);
+  const [isAuth0Loading, setIsAuth0Loading] = useState(false);
   const [signInLoading, setSignInLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
@@ -80,9 +60,16 @@ const SignUpAndLogin = ({
   const [emailExists, setEmailExists] = useState(null);
   const [existingUserName, setExistingUserName] = useState("");
 
-  // Updated state initializations with Gmail check - SSR safe
-  const [lastEmail, setLastEmail] = useState("");
-  const [showJumpBackIn, setShowJumpBackIn] = useState(false);
+  // Updated state initializations with Gmail check
+  const [lastEmail, setLastEmail] = useState(() => {
+    const storedEmail = localStorage.getItem("lastLoggedInEmail") || "";
+    return isGmailAccount(storedEmail) ? storedEmail : "";
+  });
+
+  const [showJumpBackIn, setShowJumpBackIn] = useState(() => {
+    const lastEmail = localStorage.getItem("lastLoggedInEmail");
+    return !!(lastEmail && isGmailAccount(lastEmail));
+  });
 
   // New state for step management
   const [currentStep, setCurrentStep] = useState("email"); // "email", "name", "verification"
@@ -109,15 +96,6 @@ const SignUpAndLogin = ({
       if (interval) clearInterval(interval);
     };
   }, [resendTimer]);
-
-  // Initialize localStorage values on client side to prevent SSR issues
-  useEffect(() => {
-    const storedEmail = safeLocalStorage.getItem("lastLoggedInEmail") || "";
-    if (isGmailAccount(storedEmail)) {
-      setLastEmail(storedEmail);
-      setShowJumpBackIn(true);
-    }
-  }, []);
 
   // Listen for auth state changes to handle email verification
   useEffect(() => {
@@ -151,15 +129,6 @@ const SignUpAndLogin = ({
     });
     return () => unsubscribe();
   }, [isSignUp, waitingForVerification]);
-
-  // Check for Firebase Auth action parameters
-  const mode = searchParams.get("mode");
-  const oobCode = searchParams.get("oobCode");
-
-  // If we have Firebase Auth action parameters, show the AuthActionHandler
-  if (mode && oobCode) {
-    return <AuthActionHandler />;
-  }
 
   // Handle login for verified users
   const handleVerifiedUserLogin = async (user) => {
@@ -242,7 +211,7 @@ const SignUpAndLogin = ({
       if (emailExists) {
         nameToUse = existingUserName || "";
       } else {
-        const storedName = safeLocalStorage.getItem("tempUserName");
+        const storedName = localStorage.getItem("tempUserName");
         nameToUse = storedName || currentFormData.name || "";
       }
 
@@ -256,7 +225,7 @@ const SignUpAndLogin = ({
         if (!isAutoSubmit) {
           toast.success("Email verified successfully!");
         }
-        safeLocalStorage.removeItem("tempUserName");
+        localStorage.removeItem("tempUserName");
         await handleCustomTokenAuthentication(
           response.customToken,
           response.user
@@ -287,7 +256,7 @@ const SignUpAndLogin = ({
       const idToken = await userCredential.user.getIdToken();
       const refreshToken = userCredential.user.refreshToken;
 
-      const storedName = safeLocalStorage.getItem("tempUserName");
+      const storedName = localStorage.getItem("tempUserName");
       const nameToUse = storedName || formData.name;
 
       if (nameToUse && nameToUse.trim()) {
@@ -296,7 +265,7 @@ const SignUpAndLogin = ({
         });
       }
 
-      safeLocalStorage.removeItem("tempUserName");
+      localStorage.removeItem("tempUserName");
       await getUserDetails(idToken, refreshToken, "custom-token-auth");
     } catch (error) {
       console.error("Error in custom token authentication:", error);
@@ -323,7 +292,7 @@ const SignUpAndLogin = ({
       if (emailExists) {
         nameToSend = existingUserName;
       } else {
-        nameToSend = safeLocalStorage.getItem("tempUserName");
+        nameToSend = localStorage.getItem("tempUserName");
       }
 
       const response = await sendOTP(formData.email, nameToSend);
@@ -453,7 +422,7 @@ const SignUpAndLogin = ({
     setError("");
 
     try {
-      safeLocalStorage.setItem("tempUserName", formData.name.trim());
+      localStorage.setItem("tempUserName", formData.name.trim());
       await sendOTPForNewUser();
     } catch (error) {
       console.error("Error in name submission:", error);
@@ -626,7 +595,7 @@ const SignUpAndLogin = ({
       const isVerified = response.data?.status === 1;
       if (isVerified) {
         updateTokens(accessToken, refreshToken);
-        safeLocalStorage.setItem("role", response.data?.role);
+        localStorage.setItem("role", response.data?.role);
         const userData = {
           uid: currentUser.uid,
           email: currentUser.email,
@@ -1025,12 +994,10 @@ const SignUpAndLogin = ({
                     className="mr-2 animate-spin"
                   />
                 ) : (
-                  <Image
+                  <img
                     src="/images/google-logo.svg"
                     alt="Google Icon"
                     className="mr-2"
-                    width={20}
-                    height={20}
                   />
                 )}
               </button>
@@ -1041,18 +1008,16 @@ const SignUpAndLogin = ({
                 disabled={microsoftLoading}
               >
                 {microsoftLoading ? (
-                  <FontAwesomeIcon  
+                  <FontAwesomeIcon
                     icon={faSpinner}
                     spin
                     className="mr-2 animate-spin"
                   />
                 ) : (
-                  <Image
+                  <img
                     src="/images/microsoft-logo.svg"
                     alt="Microsoft Icon"
                     className="mr-2"
-                    width={20}
-                    height={20}
                   />
                 )}
               </button>
@@ -1067,7 +1032,6 @@ const SignUpAndLogin = ({
   const stepContent = getStepContent();
 
   return (
-
       <Layout isDarkTheme={isDarkTheme}>
         <div className="flex flex-col-reverse md:flex-row bg-black text-white relative py-10">
           <Toaster
@@ -1170,12 +1134,10 @@ const SignUpAndLogin = ({
                           className="text-gray-500 animate-spin"
                         />
                       ) : (
-                        <Image
+                        <img
                           src="/images/google-logo.svg"
                           alt="Google Icon"
                           className="mr-2"
-                          width={20}
-                          height={20}
                         />
                       )}
                     </button>
@@ -1191,12 +1153,10 @@ const SignUpAndLogin = ({
                           className="mr-2 animate-spin"
                         />
                       ) : (
-                        <Image
+                        <img
                           src="/images/microsoft-logo.svg"
                           alt="Microsoft Icon"
                           className="mr-2"
-                          width={20}
-                          height={20}
                         />
                       )}
                     </button>
@@ -1207,7 +1167,6 @@ const SignUpAndLogin = ({
           </div>
         </div>
       </Layout>
-    
   );
 };
 

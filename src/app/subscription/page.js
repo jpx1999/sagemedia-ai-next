@@ -424,7 +424,7 @@ const Subscription = ({ partialAccess = false }) => {
     try {
       const response = await createSubscription(plans[selectedPlan].id);
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         subscription_id: response.subscriptionId,
         name: "WEB SPIDERS (INDIA) PRIVATE LIMITED",
         description: `${plans[selectedPlan].name} Plan Subscription`,
