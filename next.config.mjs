@@ -1,4 +1,10 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
-
-export default nextConfig;
+const nextConfig = {
+    // Removed 'output: export' to allow dynamic routes
+    images: {
+      unoptimized: true, // Keep this for better image handling
+    },
+  };
+  
+  export default nextConfig;
+  
