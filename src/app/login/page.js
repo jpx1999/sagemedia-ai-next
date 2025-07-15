@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../../store/slice/authSlice";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -51,16 +51,22 @@ const safeLocalStorage = {
   }
 };
 
+// Component that uses searchParams - must be wrapped in Suspense
+const SignUpAndLoginWithParams = (props) => {
+  const searchParams = useSearchParams();
+  return <SignUpAndLogin {...props} searchParams={searchParams} />;
+};
+
 const SignUpAndLogin = ({
   isModal = false,
   onLoginSuccess = null,
   redirectAfterLogin = true,
   isDarkTheme,
+  searchParams,
 }) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [signInLoading, setSignInLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [formData, setFormData] = useState({
@@ -153,8 +159,8 @@ const SignUpAndLogin = ({
   }, [isSignUp, waitingForVerification]);
 
   // Check for Firebase Auth action parameters
-  const mode = searchParams.get("mode");
-  const oobCode = searchParams.get("oobCode");
+  const mode = searchParams?.get("mode");
+  const oobCode = searchParams?.get("oobCode");
 
   // If we have Firebase Auth action parameters, show the AuthActionHandler
   if (mode && oobCode) {
@@ -1211,4 +1217,26 @@ const SignUpAndLogin = ({
   );
 };
 
-export default SignUpAndLogin;
+// Loading component for Suspense fallback
+const LoginPageFallback = () => (
+  <Layout isDarkTheme={true}>
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="text-center">
+        <FontAwesomeIcon
+          icon={faSpinner}
+          className="text-4xl text-blue-500 animate-spin mb-4"
+        />
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    </div>
+  </Layout>
+);
+
+// Wrapper component with Suspense
+const LoginPageWrapper = (props) => (
+  <Suspense fallback={<LoginPageFallback />}>
+    <SignUpAndLoginWithParams {...props} />
+  </Suspense>
+);
+
+export default LoginPageWrapper;
