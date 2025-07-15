@@ -60,16 +60,9 @@ const SignUpAndLogin = ({
   const [emailExists, setEmailExists] = useState(null);
   const [existingUserName, setExistingUserName] = useState("");
 
-  // Updated state initializations with Gmail check
-  const [lastEmail, setLastEmail] = useState(() => {
-    const storedEmail = localStorage.getItem("lastLoggedInEmail") || "";
-    return isGmailAccount(storedEmail) ? storedEmail : "";
-  });
-
-  const [showJumpBackIn, setShowJumpBackIn] = useState(() => {
-    const lastEmail = localStorage.getItem("lastLoggedInEmail");
-    return !!(lastEmail && isGmailAccount(lastEmail));
-  });
+  // Safe state initializations - will be set in useEffect after mount
+  const [lastEmail, setLastEmail] = useState("");
+  const [showJumpBackIn, setShowJumpBackIn] = useState(false);
 
   // New state for step management
   const [currentStep, setCurrentStep] = useState("email"); // "email", "name", "verification"
@@ -96,6 +89,17 @@ const SignUpAndLogin = ({
       if (interval) clearInterval(interval);
     };
   }, [resendTimer]);
+
+  // Initialize localStorage-dependent state after component mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedEmail = localStorage.getItem("lastLoggedInEmail") || "";
+      if (isGmailAccount(storedEmail)) {
+        setLastEmail(storedEmail);
+        setShowJumpBackIn(true);
+      }
+    }
+  }, []);
 
   // Listen for auth state changes to handle email verification
   useEffect(() => {
